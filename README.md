@@ -1,0 +1,84 @@
+# 本地音视频转文字
+
+使用免费的 `faster-whisper` 在本机转写音频或视频，不调用任何付费 API。支持本地文件，也支持使用 `yt-dlp` 下载单个 YouTube 视频的音频后转写。
+
+## 特点
+
+- 完全本地转写，不需要 OpenAI API 或其他付费服务
+- 支持 MP3、M4A、WAV、MP4、MOV、WebM 等常见格式
+- 可以直接处理本地文件或单个 YouTube 地址
+- 自动生成 TXT、SRT、VTT 和 JSON
+- 自动检测语言，也可以手动指定中文、英文等语言
+
+## 安装
+
+在终端中运行：
+
+```bash
+cd /Users/lixingjuan/Documents/lxj/local-transcriber
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+首次转写某个模型时，会从 Hugging Face 免费下载模型文件。之后可以离线转写本地文件。
+
+## 使用本地文件
+
+```bash
+source .venv/bin/activate
+python transcribe.py "/完整路径/视频.mp4"
+```
+
+音频文件（如 MP3、M4A、WAV）也可以使用同样的命令。
+
+## 使用 YouTube 地址
+
+```bash
+source .venv/bin/activate
+python transcribe.py "https://www.youtube.com/watch?v=Ts85OjXMtpc"
+```
+
+这会把音频保存在 `downloads/`，再在本机进行转写。请只下载你有权下载和使用的内容，并遵守网站条款。
+
+如果 YouTube 要求登录，可以先在浏览器中手动下载视频，再按“使用本地文件”的方式转写。
+
+## 输出
+
+默认在 `output/` 目录生成四个文件：
+
+- `.txt`：纯文字
+- `.srt`：常见字幕格式
+- `.vtt`：网页字幕格式
+- `.json`：包含时间段和识别信息的结构化结果
+
+## 常用选项
+
+```bash
+# 明确指定中文
+python transcribe.py "视频.mp4" --language zh
+
+# 更快但准确率略低
+python transcribe.py "视频.mp4" --model base
+
+# 更准确但更慢、占用更多磁盘和内存
+python transcribe.py "视频.mp4" --model medium
+
+# 自定义输出目录
+python transcribe.py "视频.mp4" --output-dir "/完整路径/转写结果"
+```
+
+默认使用 `small` 模型，是速度和准确率之间较稳妥的选择。整个识别过程使用 CPU，不会产生 API 费用。
+
+## 测试
+
+核心功能测试不需要下载模型：
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## 许可证
+
+本项目使用 [MIT License](LICENSE)。
