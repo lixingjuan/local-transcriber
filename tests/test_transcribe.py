@@ -4,10 +4,15 @@ import unittest
 from pathlib import Path
 
 from transcribe import (
+    DialogueTurn,
+    SpeakerSpan,
     TranscriptSegment,
+    TranscriptWord,
+    build_dialogue,
     format_clock,
     format_timestamp,
     is_url,
+    write_dialogue_outputs,
     write_outputs,
 )
 
@@ -49,6 +54,53 @@ class TranscribeTests(unittest.TestCase):
             )
             self.assertEqual(payload["metadata"]["language"], "zh")
             self.assertEqual(len(payload["segments"]), 2)
+
+    def test_builds_dialogue_by_speaker_turn(self):
+        words = [
+            TranscriptWord(0.0, 0.5, " Hello"),
+            TranscriptWord(0.5, 1.0, " there."),
+            TranscriptWord(1.1, 1.5, " Hi!"),
+            TranscriptWord(1.6, 2.0, " How"),
+            TranscriptWord(2.0, 2.5, " are you?"),
+        ]
+        spans = [
+            SpeakerSpan(0.0, 1.05, "SPEAKER_03"),
+            SpeakerSpan(1.05, 1.55, "SPEAKER_07"),
+            SpeakerSpan(1.55, 3.0, "SPEAKER_03"),
+        ]
+
+        turns = build_dialogue(words, spans)
+
+        self.assertEqual(
+            [(turn.speaker, turn.text) for turn in turns],
+            [
+                ("说话人 1", "Hello there."),
+                ("说话人 2", "Hi!"),
+                ("说话人 1", "How are you?"),
+            ],
+        )
+
+    def test_writes_dialogue_without_visible_timestamps(self):
+        turns = [
+            DialogueTurn(0.0, 1.0, "说话人 1", "第一段。"),
+            DialogueTurn(1.0, 2.0, "说话人 2", "第二段。"),
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            paths = write_dialogue_outputs(turns, output_dir, "sample")
+            text = (output_dir / "sample.dialogue.txt").read_text(encoding="utf-8")
+            markdown = (output_dir / "sample.dialogue.md").read_text(
+                encoding="utf-8"
+            )
+
+            self.assertEqual(len(paths), 3)
+            self.assertEqual(
+                text,
+                "说话人 1：\n\n第一段。\n\n说话人 2：\n\n第二段。\n",
+            )
+            self.assertIn("## 说话人 1\n\n第一段。", markdown)
+            self.assertNotIn("00:00", text)
 
 
 if __name__ == "__main__":

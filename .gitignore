@@ -1,6 +1,7 @@
-.venv/
+.venv*/
 downloads/
 output/
 test-output/
+dialogue-test-output/
 __pycache__/
 *.pyc
